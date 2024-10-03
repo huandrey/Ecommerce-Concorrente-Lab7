@@ -3,129 +3,37 @@ package main.java.com.ecommerce;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 class Estoque {
     private final Map<Produto, Integer> produtos;
-    private final Semaphore mutex = new Semaphore(1);
-    private final Semaphore catracaEscrita = new Semaphore(1);
-    private final Semaphore catracaLeitura = new Semaphore(1);
-    private int countLeitor = 0;
-    private int countEscritor = 0;
     private ReadWriteLock lock = new ReentrantReadWriteLock();
     private Random random = new Random();
-//    Preciso de um lock aqui
+
 
     public Estoque() {
         produtos = new ConcurrentHashMap<>();
     }
-
-//    public void adicionarProduto(Produto produto) throws InterruptedException {
-//        mutex.acquire();
-//        countEscritor++;
-//        if (countEscritor == 1) {
-//            catracaLeitura.acquire();
-//        }
-//        mutex.release();
-//
-//        catracaEscrita.acquire();
-//
-//        produtos.put(produto.getNome(), produto);
-//
-//        catracaEscrita.release();
-//
-//        mutex.acquire();
-//        countEscritor--;
-//        if (countEscritor == 0) {
-//            catracaLeitura.release();
-//        }
-//        mutex.release();
-//       
-//    }
-//
-//    public boolean verificarDisponibilidade(Pedido pedido) throws InterruptedException {
-//    	catracaLeitura.acquire();
-//        catracaLeitura.release();
-//
-//        mutex.acquire();
-//        countLeitor++;
-//        if (countLeitor == 1) {
-//            catracaEscrita.acquire();
-//        }
-//        mutex.release();
-//
-//        boolean data = false;
-//        for (Map.Entry<Produto, Integer> entry : pedido.getItens()) {
-//            Produto p = entry.getKey();
-//            int quantidadePedido = entry.getValue();
-//            if (!produtos.containsKey(p.getNome()) || produtos.get(p.getNome()).getQuantidade() < quantidadePedido) {
-//                data = false;
-//                break;
-//            }
-//            data = true;
-//        }
-//          
-//
-//        mutex.acquire();
-//        countLeitor--;
-//        if (countLeitor == 0) {
-//            catracaEscrita.release(); 
-//        }
-//        mutex.release();
-//
-//        return data;
-//    }
-//
-//    public void atualizarEstoque(Pedido pedido)  throws InterruptedException {
-//        mutex.acquire();
-//        countEscritor++;
-//        if (countEscritor == 1) {
-//            catracaLeitura.acquire();
-//        }
-//        mutex.release();
-//
-//        catracaEscrita.acquire();
-//
-//    	for (Map.Entry<Produto, Integer> entry : pedido.getItens()) {
-//            Produto p = entry.getKey();
-//            int quantidadePedido = entry.getValue();
-//            Produto produtoEstoque = produtos.get(p.getNome());
-//            if (produtoEstoque != null) {
-//                produtoEstoque.retirarProduto(quantidadePedido);
-//            }
-//        }
-//        catracaEscrita.release();
-//
-//        mutex.acquire();
-//        countEscritor--;
-//        if (countEscritor == 0) {
-//            catracaLeitura.release();
-//        }
-//        mutex.release();
-//    }
     
     public void reabastecer() {
         lock.writeLock().lock();
         int totalItensReabastecidos = 0;
-        int totalProdutos = 0;
         try {
-            String[] listaDeProdutos = {"Produto A", "Produto B", "Produto C", "Produto D", "Produto E", "Produto F"};
-
-            for (String produto : listaDeProdutos) {
-                int quantidade = random.nextInt(10) + 1;
-                double preco = random.nextDouble() * 10.0;
+            
+            for (Map.Entry<Produto, Integer> entry : produtos.entrySet()) {
+                Produto produto = entry.getKey();
+                int quantidadeAtual = entry.getValue();
                 
-                produtos.put(new Produto(produto, preco), produtos.getOrDefault(produto, 0) + quantidade);
-                totalItensReabastecidos += quantidade;
+                int quantidadeAdicional = random.nextInt(100) + 1;
+                
+                produtos.put(produto, quantidadeAtual + quantidadeAdicional);
+                totalItensReabastecidos += quantidadeAdicional;
+                
             }
-            totalProdutos = listaDeProdutos.length;
-            System.out.println("Estoque abastecido com " + totalItensReabastecidos + " itens de " + totalProdutos + " produtos.");
-
+            System.out.println("Estoque abastecido com " + totalItensReabastecidos + " itens de " + produtos.size() + " produtos.");
         } finally {
             lock.writeLock().unlock();
-            
         }
     }
  
@@ -135,7 +43,7 @@ class Estoque {
 
         try {
             for (Map.Entry<Produto, Integer> entry : pedido.getProdutos().entrySet()) {
-            	Produto produto = entry.getKey();
+                Produto produto = entry.getKey();
                 int quantidade = entry.getValue();
                 if (produtos.getOrDefault(produto, 0) < quantidade) {
                     podeProcessar = false;
@@ -149,22 +57,21 @@ class Estoque {
         if (podeProcessar) {
             lock.writeLock().lock();
             try {
-            	double valor = 0;
+                double valor = 0;
+                
                 for (Map.Entry<Produto, Integer> entry : pedido.getProdutos().entrySet()) {
-                	Produto produto = entry.getKey();
+                    Produto produto = entry.getKey();
                     int quantidade = entry.getValue();
-                    valor+=produto.getPreco();
+                    valor+=produto.getPreco() * quantidade;
                     produtos.put(produto, produtos.get(produto) - quantidade);
                 }
-
-                
-                 Relatorio.incrementarPedidosProcessados();
-                 Relatorio.incrementarValorTotalVendas(valor);
-
-                return true;
+                Relatorio.incrementarPedidosProcessados();
+                Relatorio.incrementarValorTotalVendas(valor);             
             } finally {
                 lock.writeLock().unlock();
             }
+
+            return true;
         } else {
             return false;
         }
