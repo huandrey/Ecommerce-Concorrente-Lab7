@@ -58,7 +58,7 @@ public class GeradorDePedidos implements Runnable  {
 
 	    for (int i = 0; i < quantidadeDeProdutos; i++) {
 	        String produto = produtosAleatorios.get(i);
-	        int quantidade = random.nextInt(10) + 1;
+	        int quantidade = random.nextInt(3) + 1;
 	        produtos.put(produto, quantidade);
 	    }
 

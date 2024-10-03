@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 // AINDA FALTA FAZER A PARTE DE CALCULA O PRECO TOTAL DE CADA PEDIDO
 // eu não tenho certeza se os pedidos pendentes estão sendo processados - necessario verificar
+// Sinto que ainda tem algo errado, ele ta rejeitando muito pedido e não estou vendo os pedidos pedentes serem processados
 public class EccomerceSystem {
 	private static final int CAPACIDADE_DA_FILA = 100;
 	private static BlockingQueue<Pedido> filaPedidos = new LinkedBlockingQueue<>(CAPACIDADE_DA_FILA);
@@ -23,12 +24,18 @@ public class EccomerceSystem {
         Estoque estoque = new Estoque();
         
 //        MUDEM OS VALORES DA QUANTIDADE DE CLIENTES SE ACHAREM NECESSÁRIOS - DEIXEI 3 SÓ PRA EXEMPLIFICAR
-        for (int i = 0; i < 3; i++) {
-            GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
-            Thread geradorThread = new Thread(geradorPedidos);
-            geradoresDePedidos.add(geradorThread);
-            geradorThread.start();
-        }
+//           ESSE DEU BUG: 
+        //        for (int i = 0; i < 3; i++) {
+//            GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
+//            Thread geradorThread = new Thread(geradorPedidos);
+//            geradoresDePedidos.add(geradorThread);
+//            geradorThread.start();
+//        }
+        
+//        Esse pega, mas só esta simulando 1 cliente :(
+        GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
+        
+        new Thread(geradorPedidos).start();
         
 //      MUDEM OS VALORES DA QUANTIDADE DE PROCESSADORES SE ACHAREM NECESSÁRIOS
         for (int i = 0; i < 5; i++) {
