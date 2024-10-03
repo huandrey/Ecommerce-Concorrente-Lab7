@@ -16,15 +16,21 @@ public class EccomerceSystem {
 	private static BlockingQueue<Pedido> filaPedidos = new LinkedBlockingQueue<>(CAPACIDADE_DA_FILA);
 	private static BlockingQueue<Pedido> filaPedidosPendentes = new LinkedBlockingQueue<>(CAPACIDADE_DA_FILA);
 	private static List<Thread> processadores = new ArrayList<>();
+	private static List<Thread> geradoresDePedidos = new ArrayList<>();
 	
 	public static void main(String[] args) throws InterruptedException {
 
         Estoque estoque = new Estoque();
         
-        GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
+//        MUDEM OS VALORES DA QUANTIDADE DE CLIENTES SE ACHAREM NECESSÁRIOS - DEIXEI 3 SÓ PRA EXEMPLIFICAR
+        for (int i = 0; i < 3; i++) {
+            GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
+            Thread geradorThread = new Thread(geradorPedidos);
+            geradoresDePedidos.add(geradorThread);
+            geradorThread.start();
+        }
         
-        new Thread(geradorPedidos).start();
-        
+//      MUDEM OS VALORES DA QUANTIDADE DE PROCESSADORES SE ACHAREM NECESSÁRIOS
         for (int i = 0; i < 5; i++) {
         	ProcessadorPedidos processador = new ProcessadorPedidos(filaPedidos, filaPedidosPendentes, estoque);
             Thread processadorThread = new Thread(processador);

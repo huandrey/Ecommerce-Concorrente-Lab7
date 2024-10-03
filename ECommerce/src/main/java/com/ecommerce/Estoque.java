@@ -112,7 +112,7 @@ class Estoque {
             String[] listaDeProdutos = {"Produto A", "Produto B", "Produto C", "Produto D", "Produto E", "Produto F"};
 
             for (String produto : listaDeProdutos) {
-                int quantidade = random.nextInt(20) + 1;
+                int quantidade = random.nextInt(100) + 1;
                 produtos.put(produto, produtos.getOrDefault(produto, 0) + quantidade);
             }
 

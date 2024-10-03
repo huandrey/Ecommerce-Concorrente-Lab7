@@ -44,7 +44,7 @@ public class ProcessadorPedidos implements Runnable {
                 }
 
                
-//                Thread.sleep(5000);
+                Thread.sleep(5000);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
