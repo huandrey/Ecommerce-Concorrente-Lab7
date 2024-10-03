@@ -4,19 +4,24 @@ import java.util.Map;
 
 class Pedido {
 	private final int id;
-	private final Map<String, Integer> itens;
+	private final Map<Produto, Integer> itens;
+	private int clienteId;
 
-    public Pedido(int id, Map<String, Integer> itens) {
+	public Pedido(int id, Map<Produto, Integer> itens, int clienteId) {
         this.id = id;
         this.itens = itens;
+        this.clienteId = clienteId;
     }
-
     public int getId() {
         return id;
     }
 
-    public Map<String, Integer> getProdutos() {
+    public Map<Produto, Integer> getProdutos() {
         return itens;
+    }
+    
+    public int getClienteId() {
+        return clienteId;
     }
 
     public double calcularValorTotal(Map<String, Double> precos) {

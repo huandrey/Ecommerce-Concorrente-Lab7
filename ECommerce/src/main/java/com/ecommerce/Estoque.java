@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 class Estoque {
-    private final Map<String, Integer> produtos;
+    private final Map<Produto, Integer> produtos;
     private final Semaphore mutex = new Semaphore(1);
     private final Semaphore catracaEscrita = new Semaphore(1);
     private final Semaphore catracaLeitura = new Semaphore(1);
@@ -108,16 +108,24 @@ class Estoque {
     
     public void reabastecer() {
         lock.writeLock().lock();
+        int totalItensReabastecidos = 0;
+        int totalProdutos = 0;
         try {
             String[] listaDeProdutos = {"Produto A", "Produto B", "Produto C", "Produto D", "Produto E", "Produto F"};
 
             for (String produto : listaDeProdutos) {
-                int quantidade = random.nextInt(100) + 1;
-                produtos.put(produto, produtos.getOrDefault(produto, 0) + quantidade);
+                int quantidade = random.nextInt(10) + 1;
+                double preco = random.nextDouble() * 10.0;
+                
+                produtos.put(new Produto(produto, preco), produtos.getOrDefault(produto, 0) + quantidade);
+                totalItensReabastecidos += quantidade;
             }
+            totalProdutos = listaDeProdutos.length;
+            System.out.println("Estoque abastecido com " + totalItensReabastecidos + " itens de " + totalProdutos + " produtos.");
 
         } finally {
             lock.writeLock().unlock();
+            
         }
     }
  
@@ -126,8 +134,8 @@ class Estoque {
         boolean podeProcessar = true;
 
         try {
-            for (Map.Entry<String, Integer> entry : pedido.getProdutos().entrySet()) {
-                String produto = entry.getKey();
+            for (Map.Entry<Produto, Integer> entry : pedido.getProdutos().entrySet()) {
+            	Produto produto = entry.getKey();
                 int quantidade = entry.getValue();
                 if (produtos.getOrDefault(produto, 0) < quantidade) {
                     podeProcessar = false;
@@ -142,16 +150,16 @@ class Estoque {
             lock.writeLock().lock();
             try {
             	double valor = 0;
-                for (Map.Entry<String, Integer> entry : pedido.getProdutos().entrySet()) {
-                    String produto = entry.getKey();
+                for (Map.Entry<Produto, Integer> entry : pedido.getProdutos().entrySet()) {
+                	Produto produto = entry.getKey();
                     int quantidade = entry.getValue();
+                    valor+=produto.getPreco();
                     produtos.put(produto, produtos.get(produto) - quantidade);
                 }
 
                 
-//                 double valorTotal = pedido.calcularValorTotal(getPrecoProdutos());
                  Relatorio.incrementarPedidosProcessados();
-//                 Relatorio.incrementarValorTotalVendas(valorTotal);
+                 Relatorio.incrementarValorTotalVendas(valor);
 
                 return true;
             } finally {

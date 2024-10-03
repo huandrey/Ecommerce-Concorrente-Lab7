@@ -20,8 +20,10 @@ public class ProcessadorPedidos implements Runnable {
             while (true) {
                 Pedido pedido = filaDePedidos.take();
 
-                if (!estoque.processarPedido(pedido)) {
-                	Relatorio.incrementarPedidosRejeitados();
+                if (estoque.processarPedido(pedido)) {
+                    System.out.println("Pedido do Cliente " + pedido.getClienteId() + " foi processado com sucesso.");
+                } else {
+                    Relatorio.incrementarPedidosRejeitados();
                     filaPedidosPendentes.put(pedido);
                 }
                 
@@ -33,18 +35,14 @@ public class ProcessadorPedidos implements Runnable {
     
     public void reprocessarPedidosPendentes() {
         try {
-            while (true) {   
-                Pedido pedidoPendente = filaPedidosPendentes.take();
-
-                if (!estoque.processarPedido(pedidoPendente)) {
-                	Relatorio.incrementarPedidosRejeitados();
-                    filaPedidosPendentes.put(pedidoPendente);
+            Pedido pedidoPendente = filaPedidosPendentes.poll();
+            if (pedidoPendente != null) {
+                if (estoque.processarPedido(pedidoPendente)) {
+                    System.out.println("Pedido do Cliente " + pedidoPendente.getClienteId() + " foi processado com sucesso.");
                 } else {
-                	System.out.println("Pedido pendente processado com sucesso.");
+                    Relatorio.incrementarPedidosRejeitados();
+                    filaPedidosPendentes.put(pedidoPendente);
                 }
-
-               
-//                Thread.sleep(5000);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

@@ -16,43 +16,38 @@ public class EccomerceSystem {
 	private static final int CAPACIDADE_DA_FILA = 100;
 	private static BlockingQueue<Pedido> filaPedidos = new LinkedBlockingQueue<>(CAPACIDADE_DA_FILA);
 	private static BlockingQueue<Pedido> filaPedidosPendentes = new LinkedBlockingQueue<>(CAPACIDADE_DA_FILA);
-	private static List<Thread> processadores = new ArrayList<>();
-	private static List<Thread> geradoresDePedidos = new ArrayList<>();
-	
+	private static List<ProcessadorPedidos> processadores = new ArrayList<>();
+	 
 	public static void main(String[] args) throws InterruptedException {
 
         Estoque estoque = new Estoque();
         
-//        MUDEM OS VALORES DA QUANTIDADE DE CLIENTES SE ACHAREM NECESSÁRIOS - DEIXEI 3 SÓ PRA EXEMPLIFICAR
-//           ESSE DEU BUG: 
-        //        for (int i = 0; i < 3; i++) {
-//            GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
-//            Thread geradorThread = new Thread(geradorPedidos);
-//            geradoresDePedidos.add(geradorThread);
-//            geradorThread.start();
-//        }
+        ScheduledExecutorService geradorExecutor = Executors.newScheduledThreadPool(1);
+        geradorExecutor.scheduleAtFixedRate(() -> {
+            GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
+            try {
+                geradorPedidos.run();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 0, 10, TimeUnit.SECONDS);
         
-//        Esse pega, mas só esta simulando 1 cliente :(
-        GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
-        
-        new Thread(geradorPedidos).start();
-        
-//      MUDEM OS VALORES DA QUANTIDADE DE PROCESSADORES SE ACHAREM NECESSÁRIOS
+        ScheduledExecutorService processadorExecutor = Executors.newScheduledThreadPool(5);
         for (int i = 0; i < 5; i++) {
-        	ProcessadorPedidos processador = new ProcessadorPedidos(filaPedidos, filaPedidosPendentes, estoque);
-            Thread processadorThread = new Thread(processador);
-            processadores.add(processadorThread);
-            processadorThread.start();
+            ProcessadorPedidos processador = new ProcessadorPedidos(filaPedidos, filaPedidosPendentes, estoque);
+            processadores.add(processador);
+            processadorExecutor.submit(processador);  // Submetendo o processador para o Executor
         }
+        
+        
         
         ScheduledExecutorService reabastecedor = Executors.newScheduledThreadPool(1);
         reabastecedor.scheduleAtFixedRate(() -> {
             estoque.reabastecer();
-
-            for (Thread processador : processadores) {
-                ((ProcessadorPedidos) ((Runnable) processador)).reprocessarPedidosPendentes();
+            for (ProcessadorPedidos processador : processadores) {
+                processador.reprocessarPedidosPendentes();
             }
-        }, 10, 10, TimeUnit.SECONDS);
+        }, 1, 10, TimeUnit.SECONDS);
   
         
         ScheduledExecutorService relatorioVendas = Executors.newScheduledThreadPool(1);

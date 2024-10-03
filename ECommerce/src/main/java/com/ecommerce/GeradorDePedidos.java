@@ -16,6 +16,7 @@ public class GeradorDePedidos implements Runnable  {
     private Random random = new Random();
     private int idPedido = 0;
     private Set<Pedido> pedidosGerados = new HashSet<>();
+    private static final int MAX_CLIENT_ID = 100;
 
 	public GeradorDePedidos(BlockingQueue<Pedido> filaPedidos) {
 		this.filaPedidos = filaPedidos;
@@ -25,14 +26,13 @@ public class GeradorDePedidos implements Runnable  {
     public void run() {
         try {
             while (true) {
-                Map<String, Integer> produtos = gerarProdutosAleatorios();
+                Map<Produto, Integer> produtos = gerarProdutosAleatorios();
 
-                Pedido pedido = new Pedido(++idPedido, produtos);
+                int clienteId = random.nextInt(MAX_CLIENT_ID) + 1;
+                Pedido pedido = new Pedido(++idPedido, produtos, clienteId);
 
                 if (!pedidosGerados.contains(pedido)) {
-                    filaPedidos.put(pedido);
-                  
-                    
+                    filaPedidos.put(pedido);                    
                     pedidosGerados.add(pedido);
                     if (pedidosGerados.size() > 100) {
                         pedidosGerados.clear();
@@ -46,8 +46,8 @@ public class GeradorDePedidos implements Runnable  {
         }
     }
 
-	private Map<String, Integer> gerarProdutosAleatorios() {
-	    Map<String, Integer> produtos = new HashMap<>();
+	private Map<Produto, Integer> gerarProdutosAleatorios() {
+	    Map<Produto, Integer> produtos = new HashMap<>();
 
 	    String[] listaDeProdutos = {"Produto A", "Produto B", "Produto C", "Produto D", "Produto E", "Produto F"};
 
@@ -59,7 +59,9 @@ public class GeradorDePedidos implements Runnable  {
 	    for (int i = 0; i < quantidadeDeProdutos; i++) {
 	        String produto = produtosAleatorios.get(i);
 	        int quantidade = random.nextInt(3) + 1;
-	        produtos.put(produto, quantidade);
+	        
+	        double preco = 10.0 + (random.nextDouble() * 90.0);
+	        produtos.put(new Produto(produto, preco), quantidade);
 	    }
 
 	    return produtos;
