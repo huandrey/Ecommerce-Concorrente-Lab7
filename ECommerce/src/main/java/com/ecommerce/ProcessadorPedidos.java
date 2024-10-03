@@ -21,7 +21,7 @@ public class ProcessadorPedidos implements Runnable {
                 Pedido pedido = filaDePedidos.take();
 
                 if (estoque.processarPedido(pedido)) {
-                    System.out.println("Pedido do Cliente " + pedido.getClienteId() + " foi processado com sucesso.");
+                    System.out.println("Pedido " + pedido.getId() + " do Cliente " + pedido.getClienteId() + " foi processado com sucesso.");
                 } else {
                     Relatorio.incrementarPedidosRejeitados();
                     filaPedidosPendentes.put(pedido);
