@@ -1,33 +1,38 @@
 package main.java.com.ecommerce;
 
-class Relatorio implements Runnable {
-    private int totalPedidosProcessados;
-    private int totalPedidosRejeitados;
-    private final long intervalo;
+class Relatorio {
+	
+	private static int pedidosProcessados = 0;
+    private static double valorTotalVendas = 0;
+    private static int pedidosRejeitados = 0;
 
-    public Relatorio(long intervalo) {
-        this.intervalo = intervalo;
+    public static synchronized void incrementarPedidosProcessados() {
+        pedidosProcessados++;
     }
 
-    public synchronized void pedidoProcessado() {
-        totalPedidosProcessados++;
+    public static synchronized void incrementarValorTotalVendas(double valor) {
+        valorTotalVendas += valor;
     }
 
-    public synchronized void pedidoRejeitado() {
-        totalPedidosRejeitados++;
+    public static synchronized void incrementarPedidosRejeitados() {
+        pedidosRejeitados++;
     }
 
-    @Override
-    public void run() {
-        try {
-            while (true) {
-                Thread.sleep(intervalo);
-                System.out.println("Relatório de Vendas:");
-                System.out.println("Total de Pedidos Processados: " + totalPedidosProcessados);
-                System.out.println("Total de Pedidos Rejeitados: " + totalPedidosRejeitados);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    public static synchronized void gerarRelatorio() {
+        System.out.println("Relatório de Vendas:");
+        System.out.println("Pedidos Processados: " + pedidosProcessados);
+        System.out.println("Valor Total das Vendas: R$ " + valorTotalVendas);
+        System.out.println("Pedidos Rejeitados: " + pedidosRejeitados);
+        System.out.println("----------------------------------");
+        
+        Relatorio.resetarContadores();
+        
     }
+
+	private static void resetarContadores() {
+        pedidosRejeitados = 0;
+        pedidosProcessados = 0;
+        valorTotalVendas = 0;
+		
+	}
 }

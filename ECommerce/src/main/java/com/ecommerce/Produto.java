@@ -1,31 +1,31 @@
 package main.java.com.ecommerce;
 
+import java.util.Objects;
+
 public class Produto {
     private String nome;
-    private int quantidade;
+    
 
-    public Produto(String nome, int quantidade) {
+    public Produto(String nome) {
         this.nome = nome;
-        this.quantidade = quantidade;
+      
     }
 
     public String getNome() {
         return nome;
     }
 
-    public int getQuantidade() {
-        return quantidade;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Produto produto = (Produto) o;
+        return nome.equals(produto.nome);
     }
 
-    public synchronized boolean retirarProduto(int quantidade) {
-        if (this.quantidade >= quantidade) {
-            this.quantidade -= quantidade;
-            return true;
-        }
-        return false;
+    @Override
+    public int hashCode() {
+        return Objects.hash(nome);
     }
 
-    public synchronized void reabastecer(int quantidade) {
-        this.quantidade += quantidade;
-    }
 }

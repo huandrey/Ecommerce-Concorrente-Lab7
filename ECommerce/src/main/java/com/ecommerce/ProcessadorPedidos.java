@@ -1,13 +1,16 @@
 package main.java.com.ecommerce;
 
-
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ProcessadorPedidos implements Runnable {
-    private final FilaPedidos filaDePedidos;
+    private BlockingQueue<Pedido> filaDePedidos;
+    private BlockingQueue<Pedido> filaPedidosPendentes = new LinkedBlockingQueue<>();
     private final Estoque estoque;
     
-    public ProcessadorPedidos(FilaPedidos filaDePedidos, Estoque estoque) {
-        this.filaDePedidos = filaDePedidos;
+    public ProcessadorPedidos(BlockingQueue<Pedido> filaPedidos, BlockingQueue<Pedido> filaPedidosPendentes, Estoque estoque) {
+        this.filaDePedidos = filaPedidos;
+        this.filaPedidosPendentes = filaPedidosPendentes;
         this.estoque = estoque;
     }
 
@@ -15,24 +18,36 @@ public class ProcessadorPedidos implements Runnable {
     public void run() {
         try {
             while (true) {
-                Pedido pedido = filaDePedidos.removerPedido();
-//                 A LOGICA PODE TA ERRADA, ACHO QUE TEM QUE VERIFICAR A DISPONABILIDADE DO PEDIDO
-//                processarPedido(pedido);
+                Pedido pedido = filaDePedidos.take();
+
+                if (!estoque.processarPedido(pedido)) {
+                	Relatorio.incrementarPedidosRejeitados();
+                    filaPedidosPendentes.put(pedido);
+                }
+                
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
+    
+    public void reprocessarPedidosPendentes() {
+        try {
+            while (true) {   
+                Pedido pedidoPendente = filaPedidosPendentes.take();
 
-//    private void processarPedido(Pedido pedido) {
-//        boolean pedidoProcessado = true;
-//        for (Map.Entry<Produto, Integer> item : pedido.getItens()) {
-//            Produto produto = estoque.getProduto(item.getKey().getNome());
-//            if (produto == null || !produto.retirar(item.getValue())) {
-//                pedidoProcessado = false;
-//                break;
-//            }
-//        }
-//       
-//    }
+                if (!estoque.processarPedido(pedidoPendente)) {
+                	Relatorio.incrementarPedidosRejeitados();
+                    filaPedidosPendentes.put(pedidoPendente);
+                } else {
+                	System.out.println("Pedido pendente processado com sucesso.");
+                }
+
+               
+//                Thread.sleep(5000);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }

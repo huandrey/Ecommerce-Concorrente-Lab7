@@ -1,66 +1,49 @@
 package main.java.com.ecommerce;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+
+// AINDA FALTA FAZER A PARTE DE CALCULA O PRECO TOTAL DE CADA PEDIDO
+// eu não tenho certeza se os pedidos pendentes estão sendo processados - necessario verificar
 public class EccomerceSystem {
-    public static void main(String[] args) throws InterruptedException {
-//    	TESTE - ARRUMAR JEITO DE CADASTRAR OS PRODUTOS
+	private static final int CAPACIDADE_DA_FILA = 100;
+	private static BlockingQueue<Pedido> filaPedidos = new LinkedBlockingQueue<>(CAPACIDADE_DA_FILA);
+	private static BlockingQueue<Pedido> filaPedidosPendentes = new LinkedBlockingQueue<>(CAPACIDADE_DA_FILA);
+	private static List<Thread> processadores = new ArrayList<>();
+	
+	public static void main(String[] args) throws InterruptedException {
+
         Estoque estoque = new Estoque();
-        estoque.adicionarProduto(new Produto("ProdutoA", 50));
-        estoque.adicionarProduto(new Produto("ProdutoB", 30));
-
-        FilaPedidos filaDePedidos = new FilaPedidos(10);
-        Relatorio gerenciadorDeRelatorios = new Relatorio(30000);
-
-//        POR ENQUANTO FIZ COM THREAD PRA TESTAR, MAS AIDA NÃO PEGA :(
-        new Thread(gerenciadorDeRelatorios).start();
-
-
+        
+        GeradorDePedidos geradorPedidos = new GeradorDePedidos(filaPedidos);
+        
+        new Thread(geradorPedidos).start();
+        
         for (int i = 0; i < 5; i++) {
-            new Thread(new ProcessadorPedidos(filaDePedidos, estoque)).start();
+        	ProcessadorPedidos processador = new ProcessadorPedidos(filaPedidos, filaPedidosPendentes, estoque);
+            Thread processadorThread = new Thread(processador);
+            processadores.add(processadorThread);
+            processadorThread.start();
         }
+        
+        ScheduledExecutorService reabastecedor = Executors.newScheduledThreadPool(1);
+        reabastecedor.scheduleAtFixedRate(() -> {
+            estoque.reabastecer();
 
-//        CODIGO DO CHAT GPT: PRECISA SER AVALIADO
-        for (int i = 0; i < 20; i++) {
-            List<Map.Entry<Produto, Integer>> produtos = Arrays.asList(
-                new AbstractMap.SimpleEntry<>(new Produto("Produto1", 0), 2), // quantidade do Produto1
-                new AbstractMap.SimpleEntry<>(new Produto("Produto2", 0), 1)  // quantidade do Produto2
-            );
-            Pedido pedido = new Pedido(produtos);
-            try {
-                filaDePedidos.adicionarPedido(pedido);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            for (Thread processador : processadores) {
+                ((ProcessadorPedidos) ((Runnable) processador)).reprocessarPedidosPendentes();
             }
-            Thread.sleep(1000); // Simula o tempo entre pedidos
-        }
-
-        // Simulação do reabastecimento automático
-//        new Thread(() -> {
-//            try {
-//                while (true) {
-//                    Thread.sleep(10000); // Espera 10 segundos entre os reabastecimentos
-//                    
-//                    // Verifica se os produtos estão no estoque antes de reabastecer
-//                    Produto produtoA = estoque.getProduto("ProdutoA");
-//                    Produto produtoB = estoque.getProduto("ProdutoB");
-//                    
-//                    if (produtoA != null) {
-//                        produtoA.reabastecer(5); // Reabastece 5 unidades do ProdutoA
-//                    }
-//                    if (produtoB != null) {
-//                        produtoB.reabastecer(5); // Reabastece 5 unidades do ProdutoB
-//                    }
-//                    
-//                    System.out.println("Estoque reabastecido.");
-//                }
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt(); // Restaura o status de interrupção
-//            }
-//        }).start();
+        }, 10, 10, TimeUnit.SECONDS);
+  
+        
+        ScheduledExecutorService relatorioVendas = Executors.newScheduledThreadPool(1);
+        relatorioVendas.scheduleAtFixedRate(() -> Relatorio.gerarRelatorio(), 30, 30, TimeUnit.SECONDS);
+        
     }
 }
