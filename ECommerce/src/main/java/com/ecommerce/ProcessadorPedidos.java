@@ -38,7 +38,7 @@ public class ProcessadorPedidos implements Runnable {
             Pedido pedidoPendente = filaPedidosPendentes.poll();
             if (pedidoPendente != null) {
                 if (estoque.processarPedido(pedidoPendente)) {
-                    System.out.println("Pedido do Cliente " + pedidoPendente.getClienteId() + " foi processado com sucesso.");
+                    System.out.println("Pedido " + pedidoPendente.getId() + " do Cliente " + pedidoPendente.getClienteId() + " foi processado com sucesso.");
                 } else {
                     Relatorio.incrementarPedidosRejeitados();
                     filaPedidosPendentes.put(pedidoPendente);

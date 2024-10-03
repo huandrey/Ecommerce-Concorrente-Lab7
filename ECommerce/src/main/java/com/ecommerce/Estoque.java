@@ -1,5 +1,6 @@
 package main.java.com.ecommerce;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +15,21 @@ class Estoque {
 
     public Estoque() {
         produtos = new ConcurrentHashMap<>();
+        String[] listaDeProdutos = {"Produto A", "Produto B", "Produto C", "Produto D", "Produto E", "Produto F"};
+        for (String produto : listaDeProdutos) {
+            int quantidade = random.nextInt(10) + 1;
+            double preco = random.nextDouble() * 10.0;
+            
+            produtos.put(new Produto(produto, preco), produtos.getOrDefault(produto, 0) + quantidade);
+        }
+    }
+
+    public Estoque(List<Produto> listaDeProdutos) {
+        produtos = new ConcurrentHashMap<>();
+        for (Produto produto : listaDeProdutos) {
+            int quantidade = random.nextInt(10) + 1; // Quantidade aleatória para o estoque
+            produtos.put(produto, produtos.getOrDefault(produto, 0) + quantidade);
+        }
     }
     
     public void reabastecer() {
