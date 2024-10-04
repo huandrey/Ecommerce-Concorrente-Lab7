@@ -12,15 +12,14 @@ class Estoque {
     private ReadWriteLock lock = new ReentrantReadWriteLock();
     private Random random = new Random();
 
-
     public Estoque() {
         produtos = new ConcurrentHashMap<>();
         String[] listaDeProdutos = {"Produto A", "Produto B", "Produto C", "Produto D", "Produto E", "Produto F"};
-        for (String produto : listaDeProdutos) {
+        for (String nomeProduto : listaDeProdutos) {
             int quantidade = random.nextInt(10) + 1;
             double preco = random.nextDouble() * 10.0;
-            
-            produtos.put(new Produto(produto, preco), produtos.getOrDefault(produto, 0) + quantidade);
+            Produto produto = new Produto(nomeProduto, preco);
+            produtos.put(produto, produtos.getOrDefault(produto, 0) + quantidade);
         }
     }
 
@@ -31,28 +30,26 @@ class Estoque {
             produtos.put(produto, produtos.getOrDefault(produto, 0) + quantidade);
         }
     }
-    
+
     public void reabastecer() {
         lock.writeLock().lock();
         int totalItensReabastecidos = 0;
         try {
-            
             for (Map.Entry<Produto, Integer> entry : produtos.entrySet()) {
                 Produto produto = entry.getKey();
                 int quantidadeAtual = entry.getValue();
-                
+
                 int quantidadeAdicional = random.nextInt(100) + 1;
-                
+
                 produtos.put(produto, quantidadeAtual + quantidadeAdicional);
                 totalItensReabastecidos += quantidadeAdicional;
-                
             }
             System.out.println("Estoque abastecido com " + totalItensReabastecidos + " itens de " + produtos.size() + " produtos.");
         } finally {
             lock.writeLock().unlock();
         }
     }
- 
+
     public boolean processarPedido(Pedido pedido) {
         lock.readLock().lock();
         boolean podeProcessar = true;
@@ -62,8 +59,7 @@ class Estoque {
                 Produto produto = entry.getKey();
                 int quantidade = entry.getValue();
                 if (produtos.getOrDefault(produto, 0) < quantidade) {
-                    podeProcessar = false;
-                    break;
+                    return false;
                 }
             }
         } finally {
@@ -73,25 +69,23 @@ class Estoque {
         if (podeProcessar) {
             lock.writeLock().lock();
             try {
-                double valor = 0;
-                
+                double valorTotalPedido = 0;
+
                 for (Map.Entry<Produto, Integer> entry : pedido.getProdutos().entrySet()) {
                     Produto produto = entry.getKey();
-                    int quantidade = entry.getValue();
-                    valor+=produto.getPreco() * quantidade;
-                    produtos.put(produto, produtos.get(produto) - quantidade);
+                    int quantidadeRequerida = entry.getValue();
+                    int quantidadeEmEstoque = produtos.get(produto);
+                    produtos.put(produto, quantidadeEmEstoque - quantidadeRequerida);
+                    valorTotalPedido += produto.getPreco() * quantidadeRequerida;
                 }
                 Relatorio.incrementarPedidosProcessados();
-                Relatorio.incrementarValorTotalVendas(valor);             
+                Relatorio.incrementarValorTotalVendas(valorTotalPedido);
             } finally {
                 lock.writeLock().unlock();
             }
-
             return true;
         } else {
             return false;
         }
     }
-    
-   
 }

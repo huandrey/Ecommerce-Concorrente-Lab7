@@ -7,7 +7,7 @@ public class ProcessadorPedidos implements Runnable {
     private BlockingQueue<Pedido> filaDePedidos;
     private BlockingQueue<Pedido> filaPedidosPendentes = new LinkedBlockingQueue<>();
     private final Estoque estoque;
-    
+
     public ProcessadorPedidos(BlockingQueue<Pedido> filaPedidos, BlockingQueue<Pedido> filaPedidosPendentes, Estoque estoque) {
         this.filaDePedidos = filaPedidos;
         this.filaPedidosPendentes = filaPedidosPendentes;
@@ -19,33 +19,33 @@ public class ProcessadorPedidos implements Runnable {
         try {
             while (true) {
                 Pedido pedido = filaDePedidos.take();
-
                 if (estoque.processarPedido(pedido)) {
                     System.out.println("Pedido " + pedido.getId() + " do Cliente " + pedido.getClienteId() + " foi processado com sucesso.");
                 } else {
                     Relatorio.incrementarPedidosRejeitados();
                     filaPedidosPendentes.put(pedido);
+                    System.out.println("Pedido " + pedido.getId() + " do Cliente " + pedido.getClienteId() + " foi adicionado à fila de pendentes.");
                 }
-                
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
-    
+
     public void reprocessarPedidosPendentes() {
-        try {
-            Pedido pedidoPendente = filaPedidosPendentes.poll();
-            if (pedidoPendente != null) {
-                if (estoque.processarPedido(pedidoPendente)) {
-                    System.out.println("Pedido " + pedidoPendente.getId() + " do Cliente " + pedidoPendente.getClienteId() + " foi processado com sucesso.");
-                } else {
-                    Relatorio.incrementarPedidosRejeitados();
+        Pedido pedidoPendente;
+        while ((pedidoPendente = filaPedidosPendentes.poll()) != null) {
+            if (estoque.processarPedido(pedidoPendente)) {
+                System.out.println("Pedido " + pedidoPendente.getId() + " do Cliente " + pedidoPendente.getClienteId() + " foi reprocessado com sucesso.");
+            } else {
+                Relatorio.incrementarPedidosRejeitados();
+                try {
                     filaPedidosPendentes.put(pedidoPendente);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 }
